@@ -1,0 +1,84 @@
+#!/bin/bash
+
+#    Backup test restore script for testing duplicity backups
+#
+#    Copyright (C) 2010 Miguel Jacq
+#
+#    This program is free software: you can redistribute it and/or modify
+#    it under the terms of the GNU General Public License as published by
+#    the Free Software Foundation, either version 3 of the License, or
+#    (at your option) any later version.
+#
+#    This program is distributed in the hope that it will be useful,
+#    but WITHOUT ANY WARRANTY; without even the implied warranty of
+#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#    GNU General Public License for more details.
+#
+#    You should have received a copy of the GNU General Public License
+#    along with this program.  If not, see http://www.gnu.org/licenses/.
+
+if [ ! `whoami` = "root" ] ; then
+  echo "You must run this script as root"
+  exit 1
+fi
+
+if [ -z "$1" ]; then
+  echo "No server name provided."
+  exit 1
+fi
+
+if [ ! -z "$2" ]; then
+  RESTORE_TIME="-t $2"
+fi
+
+shopt -s nullglob
+
+# What server are we testing the restore of? This is arg 1
+SERVER=$1
+
+# Where are the backups stored?
+BACKUP_DIR=/mnt/disk/backup/servers
+
+# Does this directory exist?
+if [ ! -d "$BACKUP_DIR/$SERVER" ]; then
+  echo "That server doesn't exist in our backups."
+  exit 1
+fi
+
+# Restore directory
+RESTORE_DIR=/tmp/backup_restore-$SERVER-`date '+%F-%H%M'`
+
+# Generate an array of the backup dirs for this server
+BACKED_UP_DIRS=`ls -1 $BACKUP_DIR/$SERVER/`
+
+export PASSPHRASE=srslynowaiyarly
+
+# Greeting text for the email report
+echo "This is a report of a backup test executed on `date '+%F'` at `date '+%H:%M'`."
+echo "The server being tested is $SERVER."
+
+# Loop over the backup directories and do a restore of each one to 
+# a subdirectory of $RESTORE_DIR
+
+for dir in ${BACKED_UP_DIRS[*]}; do
+  # Let's check if duplicity files exist at all. If not, this is bad news!
+  FILES=($BACKUP_DIR/$SERVER/$dir/duplicity*.gpg)
+  if [ ${#FILES[@]} -gt 0 ]; then 
+    echo "Running a collection-status report of $BACKUP_DIR/$SERVER/$dir"
+    duplicity collection-status file:///$BACKUP_DIR/$SERVER/$dir
+    echo "----------------------------------------------------------------------------"
+    echo "Creating $RESTORE_DIR/$dir"
+    mkdir -p $RESTORE_DIR/$dir
+    echo "Restoring $SERVER $dir from $BACKUP_DIR/$SERVER/$dir to $RESTORE_DIR/$dir"
+    duplicity restore $RESTORE_TIME file:///$BACKUP_DIR/$SERVER/$dir $RESTORE_DIR/$dir
+    echo "----------------------------------------------------------------------------"
+    echo "----------------------------------------------------------------------------"
+  else 
+    echo "################################ PROBLEM ##################################"
+    echo "Found no backup files in $BACKUP_DIR/$SERVER/$dir! This must be dealt with."
+    echo "################################ PROBLEM ##################################"
+  fi
+  unset FILES
+done
+
+unset PASSPHRASE

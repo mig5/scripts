@@ -1,0 +1,44 @@
+#!/bin/bash
+
+#    Script that loops over the backed up servers
+#    and runs the backup_restore_test script on them.
+#
+#    Copyright (C) 2010 Miguel Jacq
+#
+#    This program is free software: you can redistribute it and/or modify
+#    it under the terms of the GNU General Public License as published by
+#    the Free Software Foundation, either version 3 of the License, or
+#    (at your option) any later version.
+#
+#    This program is distributed in the hope that it will be useful,
+#    but WITHOUT ANY WARRANTY; without even the implied warranty of
+#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#    GNU General Public License for more details.
+#
+#    You should have received a copy of the GNU General Public License
+#    along with this program.  If not, see http://www.gnu.org/licenses/.
+
+if [ ! `whoami` = "root" ] ; then
+  echo "You must run this script as root"
+  exit 1
+fi
+
+# Where are the backups stored?
+BACKUP_DIR=/mnt/disk/backup/servers
+
+# Does this directory exist?
+if [ ! -d "$BACKUP_DIR" ]; then
+  echo "The backup directory doesn't appear to exist! Uh-oh."
+  exit 1
+fi
+
+
+# Generate an array of the servers being backed up
+BACKED_UP_SERVERS=`ls -1 $BACKUP_DIR/`
+
+for server in ${BACKED_UP_SERVERS[*]}; do
+  # not on files, which shouldn't be here anyway
+  if [ -d "$BACKUP_DIR/$server" ]; then
+    /usr/local/bin/backup_restore_test $server | mail -s "Backup report - $server" you@example.com
+  fi
+done
