@@ -1,0 +1,61 @@
+#!/bin/bash
+#
+# Test all Puppet files for syntax errors before deploying
+# Written by mig5 October 2011
+#
+# http://mig5.net
+
+PUPPET_DIR=$1
+
+dependencies() {
+  # Make sure we were passed an argument
+  if [[ -z $PUPPET_DIR ]]; then
+    echo "You must provide a path to the puppet manifests!"
+    exit 1
+  fi
+
+  # Make sure that the directory passed as an argument, exists
+  if [ ! -d $PUPPET_DIR ]; then
+    echo "No such directory!"
+    exit 1
+  fi
+}
+
+
+pp_tests() {
+  # Test the .pp files for syntax errors
+  echo "===> Testing the syntax of puppet manifests"
+  for file in `find $PUPPET_DIR -type f -name "*.pp"`; do 
+    puppet --parseonly $file || exit 1;
+  done
+}
+
+erb_tests() {
+  # Test the .erb template files for syntax errors
+  echo "===> Testing the syntax of puppet templates"
+  for file in `find $PUPPET_DIR -type f -name *.erb`; do 
+    erb -x -T '-' $file | ruby -c > /dev/null || exit 1;
+  done
+}
+
+check_result() {
+  # Check to see what the return code was from previous test
+  if [ $? -eq 0 ]; then
+    echo "Tests passed!"
+  else
+    echo "Looks like some tests failed. You'll need to check these."
+  fi
+}
+
+main() {
+  dependencies
+  pp_tests
+  check_result
+  erb_tests
+  check_result
+  if [ $? -eq 0 ]; then
+    echo "Yay! All tests passed."
+  fi
+}
+
+main
