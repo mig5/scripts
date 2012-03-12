@@ -26,7 +26,7 @@ pp_tests() {
   # Test the .pp files for syntax errors
   echo "===> Testing the syntax of puppet manifests"
   for file in `find $PUPPET_DIR -type f -name "*.pp"`; do 
-    puppet --parseonly $file || exit 1;
+    puppet parser validate $file || exit 1;
   done
 }
 
