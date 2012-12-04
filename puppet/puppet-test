@@ -33,7 +33,7 @@ pp_tests() {
   done
 
   # Use xargs to avoid the ruby startup penalty as much as possible
-  echo $puppetFiles | xargs puppet parser validate --color=false || exit $?;
+  echo $puppetFiles | xargs puppet parser validate || exit $?;
 }
 
 erb_tests() {
