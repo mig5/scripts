@@ -25,9 +25,15 @@ dependencies() {
 pp_tests() {
   # Test the .pp files for syntax errors
   echo "===> Testing the syntax of puppet manifests"
+  
+  # Build a space separated list of all the puppet manifests
+  puppetFiles=""
   for file in `find $PUPPET_DIR -type f -name "*.pp"`; do 
-    puppet parser validate $file || exit 1;
+    puppetFiles="${puppetFiles}$file "
   done
+
+  # Use xargs to avoid the ruby startup penalty as much as possible
+  echo $puppetFiles | xargs puppet parser validate || exit $?;
 }
 
 erb_tests() {
